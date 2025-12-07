@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OWN-LINE FUNITIKAN</title>
+    <script src="assets/js/vue.global.js"></script>
+    <script src="assets/js/tailwind.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Small customization for the font */
+        body { font-family: 'Fredoka', sans-serif; }
+    </style>
+</head>
+<body class="bg-blue-50 min-h-screen flex items-center justify-center p-4">
+
+<div id="app" class="w-full max-w-4xl">
+    <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-200">
+        <div class="bg-blue-500 p-6 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-md">
+                {{ isGameFinished ? 'OWN-LINE FUNITIKAN' : currentStory.title }}
+            </h1>
+        </div>
+        <div class="p-6 md:p-10">
+            <div v-if="mode === 'story'" class="space-y-6">
+                <div class="prose prose-lg max-w-none text-gray-700 leading-loose text-justify bg-blue-50 p-6 rounded-xl border border-blue-100">
+                    <div v-html="formattedStory"></div>
+                </div>
+                <div class="text-center pt-4">
+                    <button
+                            @click="startGame"
+                            class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold text-xl py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 hover:-translate-y-1">
+                        🎮 Simulan ang Laro
+                    </button>
+                </div>
+            </div>
+            <div v-else-if="mode === 'game'" class="flex flex-col items-center">
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 w-full rounded-r-lg">
+                    <p class="text-yellow-800 text-lg">
+                        <strong>Panuto:</strong> {{ currentStory.gameInstructions }}
+                    </p>
+                </div>
+                <div class="bg-gray-800 p-3 rounded-xl shadow-inner mb-6">
+                    <div class="grid gap-1" :style="{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }">
+                        <div
+                            v-for="(cell, index) in flatGrid"
+                            :key="index"
+                            @click="toggleCell(index)"
+                            class="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center font-bold text-xl rounded cursor-pointer transition-all duration-150 select-none shadow-sm"
+                            :class="getCellClasses(index)"
+                        >
+                            {{ cell }}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center space-y-4 w-full">
+                    <div class="bg-white border-2 border-gray-200 px-6 py-3 rounded-full shadow-sm">
+                        <span class="text-gray-500 uppercase text-sm font-bold tracking-wide">Napiling Letra:</span>
+                        <span class="ml-2 text-2xl font-bold text-blue-600 tracking-widest min-h-[32px] inline-block">
+                            {{ currentSelectionString || '...' }}
+                        </span>
+                    </div>
+                    <div v-if="feedbackMessage"
+                         class="px-6 py-2 rounded-full font-bold text-white shadow-md animate-bounce"
+                         :class="{
+                            'bg-red-500': feedbackColor === 'red',
+                            'bg-green-500': feedbackColor === 'green',
+                            'bg-orange-400': feedbackColor === 'orange'
+                         }">
+                        {{ feedbackMessage }}
+                    </div>
+                    <div class="flex gap-4">
+                        <button @click="clearSelection" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-6 rounded-full transition">
+                            Burahin
+                        </button>
+                        <button @click="checkAnswer" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-8 rounded-full shadow-md transform transition hover:scale-105">
+                            ✅ Ipasa (Submit)
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-10 w-full bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                    <h3 class="text-xl font-bold text-blue-800 mb-4">Mga Hinahanap:</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div
+                            v-for="(clue, key) in currentStory.clues"
+                            :key="key"
+                            class="p-3 rounded-lg border transition-all duration-300"
+                            :class="solvedWords.includes(key) ? 'bg-green-100 border-green-300 text-green-700' : 'bg-white border-blue-100 text-gray-600'"
+                        >
+                            <div class="flex items-start">
+                                <span class="mr-2 mt-1">
+                                    <span v-if="solvedWords.includes(key)">✅</span>
+                                    <span v-else>🔍</span>
+                                </span>
+                                <span>
+                                    <span :class="{'line-through opacity-50': solvedWords.includes(key)}">{{ clue }}</span>
+                                    <span v-if="solvedWords.includes(key)" class="block font-bold mt-1 text-sm">SAGOT: {{ key }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="allSolved" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl transform scale-100 animate-bounce-in">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h2 class="text-3xl font-bold text-green-600 mb-2">Mahusay!</h2>
+                        <p class="text-gray-600 mb-8 text-lg">Natapos mo ang laro para sa kwentong ito.</p>
+                        <button @click="nextStory" class="bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-4 px-10 rounded-full shadow-xl w-full transition">
+                            Susunod na Kwento &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div v-if="mode === 'story' && !isGameFinished" class="space-y-6"></div>
+            <div v-else-if="mode === 'game' && !isGameFinished" class="flex flex-col items-center"></div>
+            <div v-if="isGameFinished" class="text-center py-10 animate-bounce-in">
+                <div class="mb-6">
+                    <span class="text-8xl">🏆</span>
+                </div>
+                <h2 class="text-4xl font-bold text-blue-900 mb-4">
+                    Binabati kita!
+                </h2>
+                <p class="text-xl text-gray-600 mb-8">
+                    Natapos mo na ang lahat ng kwento at laro sa<br>
+                    <strong>OWN-LINE FUNITIKAN</strong>.
+                </p>
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-8 text-left max-w-md mx-auto rounded">
+                    <p class="font-bold">Aral na Natutunan:</p>
+                    <ul class="list-disc list-inside mt-2">
+                        <li>Huwag magtiwala sa hindi kakilala (Kuting)</li>
+                        <li>Huwag magnakaw (Kalabaw)</li>
+                        <li>Maging maingat sa mapagpanggap (Ahas)</li>
+                    </ul>
+                </div>
+                <button
+                        @click="restartWholeGame"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transform transition hover:scale-105">
+                    🔄 Maglaro Ulit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="data/stories.js"></script>
+<script src="assets/js/app.js"></script>
+
+</body>
+</html>
