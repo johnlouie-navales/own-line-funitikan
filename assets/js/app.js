@@ -22,9 +22,6 @@ createApp({
             return this.currentStory.text.replace(/\n/g, '<br>');
         },
         gridSize() {
-            // if grid is empty, return 0 to prevent crash
-            if (!this.currentStory.gridLetters || this.currentStory.gridLetters[0]) return 0;
-            // calculate grid width based on the first row of letters
             return this.currentStory.gridLetters[0].length;
         },
         flatGrid() {
