@@ -22,6 +22,7 @@ createApp({
             return this.currentStory.text.replace(/\n/g, '<br>');
         },
         gridSize() {
+            if (!this.currentStory.gridLetters || !this.currentStory.gridLetters[0]) return 0;
             return this.currentStory.gridLetters[0].length;
         },
         flatGrid() {
@@ -31,19 +32,28 @@ createApp({
             return this.selectedIndices.map(i => this.flatGrid[i]).join('');
         },
         allSolved() {
-            return this.solvedWords.length === Object.keys(this.currentStory.clues).length;
+            if (!this.currentStory || !this.currentStory.clues) return false;
+            const totalClues = Object.keys(this.currentStory.clues).length;
+            const solvedCount = this.solvedWords.length;
+            if (totalClues === 0) return false;
+            return solvedCount === totalClues;
         }
     },
     mounted() {
-        // check if there is a saved story index
-        if (localStorage.getItem('funitikan_story_index')) {
-            this.currentStoryIndex = parseInt(localStorage.getItem('funitikan_story_index'));
-        }
+        const savedIndex = localStorage.getItem('funitikan_story_index');
+        if (savedIndex) this.currentStoryIndex = parseInt(savedIndex);
 
-        // check if the game is finished
         if (localStorage.getItem('funitikan_game_finished')) {
             this.isGameFinished = true;
             this.mode = 'finished';
+        } else {
+            this.mode = 'story';
+
+            const savedSolved = localStorage.getItem(`funitikan_solved_${this.currentStoryIndex}`);
+            const savedIndices = localStorage.getItem(`funitikan_indices_${this.currentStoryIndex}`);
+
+            if (savedSolved) this.solvedWords = JSON.parse(savedSolved);
+            if (savedIndices) this.foundIndices = JSON.parse(savedIndices);
         }
     },
     methods: {
@@ -62,10 +72,13 @@ createApp({
             }
         },
         nextStory() {
+            localStorage.removeItem(`funitikan_solved_${this.currentStoryIndex}`);
+            localStorage.removeItem(`funitikan_indices_${this.currentStoryIndex}`);
+
             if (this.currentStoryIndex < this.stories.length - 1) {
                 this.currentStoryIndex++;
                 localStorage.setItem('funitikan_story_index', this.currentStoryIndex);
-                this.resetGame(); // call the reset function
+                this.resetGame();
             } else {
                 this.isGameFinished = true;
                 this.mode = 'finished';
@@ -77,13 +90,25 @@ createApp({
             this.selectedIndices = [];
             this.solvedWords = [];
             this.foundIndices = [];
-            this.feedbackMessage = ''
+            this.feedbackMessage = '';
+
+            // Clean up for the new story (just in case)
+            localStorage.removeItem(`funitikan_solved_${this.currentStoryIndex}`);
+            localStorage.removeItem(`funitikan_indices_${this.currentStoryIndex}`);
         },
         restartWholeGame() {
             this.currentStoryIndex = 0;
             this.isGameFinished = false;
+
             localStorage.removeItem('funitikan_story_index');
             localStorage.removeItem('funitikan_game_finished');
+
+            // loop through all stories and remove their specific data
+            for (let i = 0; i < this.stories.length; i++) {
+                localStorage.removeItem(`funitikan_solved_${i}`);
+                localStorage.removeItem(`funitikan_indices_${i}`);
+            }
+
             this.resetGame();
         },
         startGame() {
@@ -105,7 +130,6 @@ createApp({
         showFeedback(text, color) {
             this.feedbackMessage = text;
             this.feedbackColor = color;
-            // Hide the message automatically after 3 seconds
             setTimeout(() => {
                 this.feedbackMessage = '';
             }, 3000);
@@ -126,8 +150,11 @@ createApp({
 
                 this.solvedWords.push(originalKey);
                 this.foundIndices.push(...this.selectedIndices);
-                this.selectedIndices = [];
 
+                localStorage.setItem(`funitikan_solved_${this.currentStoryIndex}`, JSON.stringify(this.solvedWords));
+                localStorage.setItem(`funitikan_indices_${this.currentStoryIndex}`, JSON.stringify(this.foundIndices));
+
+                this.selectedIndices = [];
                 this.showFeedback("Tama! Mahusay!", "green");
 
             } else {
