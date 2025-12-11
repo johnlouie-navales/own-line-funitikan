@@ -91,24 +91,18 @@ createApp({
             this.solvedWords = [];
             this.foundIndices = [];
             this.feedbackMessage = '';
-
-            // Clean up for the new story (just in case)
             localStorage.removeItem(`funitikan_solved_${this.currentStoryIndex}`);
             localStorage.removeItem(`funitikan_indices_${this.currentStoryIndex}`);
         },
         restartWholeGame() {
             this.currentStoryIndex = 0;
             this.isGameFinished = false;
-
             localStorage.removeItem('funitikan_story_index');
             localStorage.removeItem('funitikan_game_finished');
-
-            // loop through all stories and remove their specific data
             for (let i = 0; i < this.stories.length; i++) {
                 localStorage.removeItem(`funitikan_solved_${i}`);
                 localStorage.removeItem(`funitikan_indices_${i}`);
             }
-
             this.resetGame();
         },
         startGame() {
@@ -134,7 +128,45 @@ createApp({
                 this.feedbackMessage = '';
             }, 3000);
         },
+        isValidSelection() {
+            const indices = this.selectedIndices;
+            if (indices.length < 2) return true;
+
+            const width = this.gridSize;
+            const diff = indices[1] - indices[0];
+
+            for (let i = 1; i < indices.length; i++) {
+                if (indices[i] - indices[i-1] !== diff) return false;
+            }
+
+            const absDiff = Math.abs(diff);
+            const isHorizontal = absDiff === 1;
+            const isVertical = absDiff === width;
+            const isDiagonalDown = absDiff === width + 1; // \ direction
+            const isDiagonalUp = absDiff === width - 1; // / direction
+
+            if (!isHorizontal && !isVertical && !isDiagonalDown && !isDiagonalUp) return false;
+
+            for (let i = 0; i < indices.length - 1; i++) {
+                const current = indices[i];
+                const next = indices[i+1];
+                const currentCol = current % width;
+                const nextCol = next % width;
+                const colDiff = Math.abs(nextCol - currentCol);
+
+                if (isHorizontal || isDiagonalDown || isDiagonalUp) {
+                    if (colDiff !== 1) return false;
+                }
+            }
+            return true;
+        },
         checkAnswer() {
+            if (!this.isValidSelection()) {
+                this.showFeedback("Dapat magkatabi at nasa linya ang mga letra!", "red");
+                this.selectedIndices = [];
+                return;
+            }
+
             const currentWord = this.currentSelectionString.toUpperCase().trim();
             const cluesObject = this.currentStory.clues;
             const correctWords = Object.keys(cluesObject).map(w => w.toUpperCase().trim());
@@ -150,13 +182,10 @@ createApp({
 
                 this.solvedWords.push(originalKey);
                 this.foundIndices.push(...this.selectedIndices);
-
                 localStorage.setItem(`funitikan_solved_${this.currentStoryIndex}`, JSON.stringify(this.solvedWords));
                 localStorage.setItem(`funitikan_indices_${this.currentStoryIndex}`, JSON.stringify(this.foundIndices));
-
                 this.selectedIndices = [];
                 this.showFeedback("Tama! Mahusay!", "green");
-
             } else {
                 this.showFeedback("Mali ang sagot! Subukan ulit.", "red");
                 this.selectedIndices = [];
