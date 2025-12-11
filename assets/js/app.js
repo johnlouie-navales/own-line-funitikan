@@ -4,6 +4,7 @@ createApp({
     data() {
         return {
             currentStoryIndex: 0,
+            currentSceneIndex: 0,
             stories: storiesDB,
             mode: 'story',
             selectedIndices: [],
@@ -17,6 +18,10 @@ createApp({
     computed: {
         currentStory() {
             return this.stories[this.currentStoryIndex];
+        },
+        currentScene() {
+            if (!this.currentStory.scenes) return null;
+            return this.currentStory.scenes[this.currentSceneIndex];
         },
         formattedStory() {
             return this.currentStory.text.replace(/\n/g, '<br>');
@@ -49,6 +54,8 @@ createApp({
         } else {
             this.mode = 'story';
 
+            this.currentSceneIndex = 0;
+
             const savedSolved = localStorage.getItem(`funitikan_solved_${this.currentStoryIndex}`);
             const savedIndices = localStorage.getItem(`funitikan_indices_${this.currentStoryIndex}`);
 
@@ -69,6 +76,20 @@ createApp({
             else {
                 // default style (gray/white)
                 return 'bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-600';
+            }
+        },
+        prevScene(event) {
+            if (event) event.stopPropagation();
+
+            if (this.currentSceneIndex > 0) {
+                this.currentSceneIndex--;
+            }
+        },
+        nextScene() {
+            if (this.currentSceneIndex < this.currentStory.scenes.length - 1) {
+                this.currentSceneIndex++;
+            } else {
+                this.startGame();
             }
         },
         nextStory() {
