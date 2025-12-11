@@ -2,7 +2,68 @@ const storiesDB = [
     {
         id: 1,
         title: "Ang Sakim na Kuting",
-        text: `Palaging magkaaway si Kuting at Daga dahil sa pagkain. Kapag may nahahanap na pagkain si Daga, agad itong inaagaw ni Kuting.\n\nIsang araw, may nakita si Kuting na ibon sa labas ng bakuran. Nakita niyang kausap ito ni Daga. "Ah, sabay ko silang kakainin!"\n\nHabang papalapit si Kuting, sumigaw si Daga "Lipad, Ibon, lipad!"\n\nAgad namang nakalayo ang ibon. Naiinis si Kuting ngunit kalaunan ay muling nakita ang ibon na natutulog. Nilapitan niya ito at pinuri ang ganda nito.\n\n"Wag mo akong kainin!"\n\n"Hindi kita kakainin, gusto ko lang makipagkaibigan."\n\nNaniwala si Ibon at natuwa rin si Daga. Ngunit nang umalis si Daga, biglang nagbago ang isip ni Kuting.\n\n"Sa wakas, may pananghalian na ako!" bulalas niya.\n\nSakto namang dumating si Daga at tinawag ang mga kaibigan upang tulungan ang ibon. Naitakas nila si Ibon at lubos itong nagpasalamat kay Daga.\n\nARAL: Huwag basta maniniwala sa mga pangako. Kilalanin muna kung sino ang tunay na kaibigan.`,
+        scenes: [
+            {
+                image: "assets/images/story-1/scene-1.webp",
+                speaker: "Narrator",
+                text: "Palaging magkaaway si Kuting at Daga dahil sa pagkain. Kapag may nahahanap na pagkain si Daga, agad itong inaagaw ni Kuting."
+            },
+            {
+                image: "assets/images/story-1/scene-2.webp",
+                speaker: "Narrator",
+                text: "Isang araw, may nakita si Kuting na ibon sa labas ng bakuran. Nakita niyang kausap ito ni Daga."
+            },
+            {
+                image: "assets/images/story-1/scene-3.webp",
+                speaker: "Kuting",
+                text: "Ah, sabay ko silang kakainin!"
+            },
+            {
+                image: "assets/images/story-1/scene-4.webp",
+                speaker: "Daga",
+                text: "Lipad, Ibon, lipad!"
+            },
+            {
+                image: "assets/images/story-1/scene-5.webp",
+                speaker: "Narrator",
+                text: "Agad namang nakalayo ang ibon. Naiinis si Kuting ngunit kalaunan ay muling nakita ang ibon na natutulog. Nilapitan niya ito at pinuri ang ganda nito."
+            },
+            {
+                image: "assets/images/story-1/scene-6.webp",
+                speaker: "Ibon",
+                text: "Wag mo akong kainin."
+            },
+            {
+                image: "assets/images/story-1/scene-7.webp",
+                speaker: "Kuting",
+                text: "Hindi kita kakainin, gusto ko lang makipagkaibigan."
+            },
+            {
+                image: "assets/images/story-1/scene-8.webp",
+                speaker: "Narrator",
+                text: "Naniwala si Ibon at natuwa rin si Daga."
+            },
+            {
+                image: "assets/images/story-1/scene-9.webp",
+                speaker: "Narrator",
+                text: "Ngunit nang umalis si Daga, biglang nagbago ang isip ni Kuting."
+            },
+            {
+                image: "assets/images/story-1/scene-10.webp",
+                speaker: "Kuting",
+                text: "“Sa wakas, may pananghalian na ako!” bulalas niya."
+            },
+            {
+                image: "assets/images/story-1/scene-11.webp",
+                speaker: "Narrator",
+                text: "Sakto namang dumating si Daga at tinawag ang mga kaibigan upang tulungan ang ibon. Naitakas nila si Ibon at lubos itong nagpasalamat kay Daga."
+            },
+            {
+                image: "assets/images/story-1/scene-12.webp",
+                speaker: "Aral",
+                text: "Huwag basta maniniwala sa mga pangako. Kilalanin muna kung sino ang tunay na kaibigan."
+            }
+        ],
         gameInstructions: "Basahing mabuti ang mga clue at hanapin sa kahon ang tamang sagot. I-click ang mga letra para mabuo ang salita.",
         clues: {
             "DAGA": "Isa sa mga pangunahing tauhan sa kwento",
