@@ -108,6 +108,7 @@ createApp({
         },
         resetGame() {
             this.mode = 'story';
+            this.currentSceneIndex = 0;
             this.selectedIndices = [];
             this.solvedWords = [];
             this.foundIndices = [];
@@ -206,6 +207,19 @@ createApp({
                 localStorage.setItem(`funitikan_solved_${this.currentStoryIndex}`, JSON.stringify(this.solvedWords));
                 localStorage.setItem(`funitikan_indices_${this.currentStoryIndex}`, JSON.stringify(this.foundIndices));
                 this.selectedIndices = [];
+                const totalClues = Object.keys(cluesObject).length;
+                if (this.solvedWords.length === totalClues) {
+                    if (this.currentStoryIndex === this.stories.length - 1) {
+                        this.showFeedback("Tama! Natapos mo na ang laro!", "green");
+                        setTimeout(() => {
+                            this.isGameFinished = true;
+                            this.mode = 'finished';
+                            localStorage.setItem('funitikan_game_finished', 'true');
+                        }, 1000);
+                        return;
+                    }
+                }
+
                 this.showFeedback("Tama! Mahusay!", "green");
             } else {
                 this.showFeedback("Mali ang sagot! Subukan ulit.", "red");
