@@ -3,16 +3,28 @@ const { createApp } = Vue;
 createApp({
     data() {
         return {
+            // User Session
+            currentUser: null,
+            currentUserId: null, // We need this for the Database ID
+            inputUsername: '',   // For the login form input
+            savedUsers: [],      // Optional: If you want to show a "Quick Login" list from DB later
+
+            // App State
             currentStoryIndex: 0,
             currentSceneIndex: 0,
             stories: storiesDB,
-            mode: 'story',
+            mode: 'login', // Start at Login screen now
+
+            // Game State
             selectedIndices: [],
             solvedWords: [],
             foundIndices: [],
             feedbackMessage: '',
             feedbackColor: '',
-            isGameFinished: false
+            isGameFinished: false,
+
+            // Dashboard Data
+            dashboardData: []
         }
     },
     computed: {
@@ -42,28 +54,89 @@ createApp({
             const solvedCount = this.solvedWords.length;
             if (totalClues === 0) return false;
             return solvedCount === totalClues;
+        },
+        studentStats() {
+            if (!this.dashboardData) return [];
+            return this.dashboardData.map(student => {
+                let totalScore = 0;
+                let maxScore = 0;
+                let storiesCompleted = 0;
+                let details = [];
+
+                this.stories.forEach((story, index) => {
+                    const dbStory = student.raw_details.find(d => d.story_index === index);
+                    const solvedCount = dbStory ? dbStory.score : 0;
+                    const totalClues = Object.keys(story.clues).length;
+
+                    totalScore += solvedCount;
+                    maxScore += totalClues;
+
+                    if (dbStory && dbStory.is_completed) storiesCompleted++;
+
+                    details.push({
+                        title: story.title,
+                        score: solvedCount,
+                        total: totalClues,
+                        percentage: totalClues > 0 ? (solvedCount / totalClues) * 100 : 0
+                    });
+                });
+
+                const totalProgress = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
+                return {
+                    name: student.name.charAt(0).toUpperCase() + student.name.slice(1),
+                    progress: totalProgress,
+                    storiesFinished: storiesCompleted,
+                    totalStories: this.stories.length,
+                    details: details
+                };
+            });
         }
     },
-    mounted() {
-        const savedIndex = localStorage.getItem('funitikan_story_index');
-        if (savedIndex) this.currentStoryIndex = parseInt(savedIndex);
+    async mounted() {
 
-        if (localStorage.getItem('funitikan_game_finished')) {
-            this.isGameFinished = true;
-            this.mode = 'finished';
-        } else {
-            this.mode = 'story';
-
-            this.currentSceneIndex = 0;
-
-            const savedSolved = localStorage.getItem(`funitikan_solved_${this.currentStoryIndex}`);
-            const savedIndices = localStorage.getItem(`funitikan_indices_${this.currentStoryIndex}`);
-
-            if (savedSolved) this.solvedWords = JSON.parse(savedSolved);
-            if (savedIndices) this.foundIndices = JSON.parse(savedIndices);
-        }
     },
     methods: {
+        // --- LOGIN LOGIC ---
+        async login() {
+            if (!this.inputUsername.trim()) return;
+            const username = this.inputUsername.trim().toLowerCase();
+
+            try {
+                // Call our new API
+                const data = await FunitikanAPI.login(username);
+
+                if (data) {
+                    this.currentUser = data.username;
+                    this.currentUserId = data.student_id;
+                    this.currentStoryIndex = data.current_story_index;
+
+                    if (data.is_game_finished) {
+                        this.isGameFinished = true;
+                        this.mode = 'finished';
+                    } else {
+                        this.mode = 'story';
+                        this.currentSceneIndex = 0; // Always start story from beginning
+                        this.solvedWords = data.solved_words || [];
+                        this.foundIndices = data.found_indices || [];
+                    }
+                }
+            } catch (e) {
+                alert("Login Failed: " + e.message);
+            }
+        },
+
+        // --- DASHBOARD LOGIC ---
+        async openDashboard() {
+            const data = await FunitikanAPI.getDashboard();
+            if (data) {
+                this.dashboardData = data;
+                this.mode = 'dashboard';
+            }
+        },
+        exitDashboard() {
+            this.mode = 'login';
+        },
         getCellClasses(index) {
             if (this.isCellFound(index)) {
                 // style for found words (green)
@@ -92,39 +165,42 @@ createApp({
                 this.startGame();
             }
         },
-        nextStory() {
-            localStorage.removeItem(`funitikan_solved_${this.currentStoryIndex}`);
-            localStorage.removeItem(`funitikan_indices_${this.currentStoryIndex}`);
-
+        async nextStory() {
             if (this.currentStoryIndex < this.stories.length - 1) {
                 this.currentStoryIndex++;
-                localStorage.setItem('funitikan_story_index', this.currentStoryIndex);
+
+                // Reset Level Data
+                this.solvedWords = [];
+                this.foundIndices = [];
+                this.selectedIndices = [];
+                this.currentSceneIndex = 0;
+
+                // Save New State to DB
+                await FunitikanAPI.saveState(this.currentUserId, this.currentStoryIndex, false);
+
                 this.resetGame();
             } else {
                 this.isGameFinished = true;
                 this.mode = 'finished';
-                localStorage.setItem('funitikan_game_finished', 'true');
+                await FunitikanAPI.saveState(this.currentUserId, this.currentStoryIndex, true);
             }
         },
         resetGame() {
             this.mode = 'story';
             this.currentSceneIndex = 0;
             this.selectedIndices = [];
-            this.solvedWords = [];
-            this.foundIndices = [];
             this.feedbackMessage = '';
-            localStorage.removeItem(`funitikan_solved_${this.currentStoryIndex}`);
-            localStorage.removeItem(`funitikan_indices_${this.currentStoryIndex}`);
         },
-        restartWholeGame() {
+        async restartWholeGame() {
             this.currentStoryIndex = 0;
             this.isGameFinished = false;
-            localStorage.removeItem('funitikan_story_index');
-            localStorage.removeItem('funitikan_game_finished');
-            for (let i = 0; i < this.stories.length; i++) {
-                localStorage.removeItem(`funitikan_solved_${i}`);
-                localStorage.removeItem(`funitikan_indices_${i}`);
-            }
+            this.solvedWords = [];
+            this.foundIndices = [];
+            this.selectedIndices = [];
+
+            // Reset DB State to 0
+            await FunitikanAPI.saveState(this.currentUserId, 0, false);
+
             this.resetGame();
         },
         startGame() {
@@ -182,7 +258,10 @@ createApp({
             }
             return true;
         },
-        checkAnswer() {
+        forceNextStory() {
+            this.nextStory();
+        },
+        async checkAnswer() {
             if (!this.isValidSelection()) {
                 this.showFeedback("Dapat magkatabi at nasa linya ang mga letra!", "red");
                 this.selectedIndices = [];
@@ -204,17 +283,24 @@ createApp({
 
                 this.solvedWords.push(originalKey);
                 this.foundIndices.push(...this.selectedIndices);
-                localStorage.setItem(`funitikan_solved_${this.currentStoryIndex}`, JSON.stringify(this.solvedWords));
-                localStorage.setItem(`funitikan_indices_${this.currentStoryIndex}`, JSON.stringify(this.foundIndices));
                 this.selectedIndices = [];
                 const totalClues = Object.keys(cluesObject).length;
-                if (this.solvedWords.length === totalClues) {
+                const isCompleted = this.solvedWords.length === totalClues;
+                await FunitikanAPI.saveProgress(
+                    this.currentUserId,
+                    this.currentStoryIndex,
+                    this.solvedWords,
+                    this.foundIndices,
+                    isCompleted
+                );
+                if (isCompleted) {
                     if (this.currentStoryIndex === this.stories.length - 1) {
                         this.showFeedback("Tama! Natapos mo na ang laro!", "green");
-                        setTimeout(() => {
+                        setTimeout(async () => {
                             this.isGameFinished = true;
                             this.mode = 'finished';
-                            localStorage.setItem('funitikan_game_finished', 'true');
+                            // Save Final State
+                            await FunitikanAPI.saveState(this.currentUserId, this.currentStoryIndex, true);
                         }, 1000);
                         return;
                     }
