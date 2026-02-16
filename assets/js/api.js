@@ -43,12 +43,13 @@ const FunitikanAPI = {
     },
 
     // --- GAME PROGRESS ---
-    saveProgress(student_id, story_index, solved_words, found_indices, is_completed) {
+    saveProgress(student_id, story_index, solved_words, found_indices, time_remaining, is_completed) {
         return this.request('progress', 'POST', {
             student_id,
             story_index,
             solved_words,
             found_indices,
+            time_remaining,
             is_completed
         });
     },

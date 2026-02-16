@@ -3,19 +3,19 @@ const { createApp } = Vue;
 createApp({
     data() {
         return {
-            // User Session
+            // user session
             currentUser: null,
-            currentUserId: null, // We need this for the Database ID
-            inputUsername: '',   // For the login form input
-            savedUsers: [],      // Optional: If you want to show a "Quick Login" list from DB later
+            currentUserId: null,
+            inputUsername: '',
+            savedUsers: [],
 
-            // App State
+            // app state
             currentStoryIndex: 0,
             currentSceneIndex: 0,
             stories: storiesDB,
-            mode: 'login', // Start at Login screen now
+            mode: 'login',
 
-            // Game State
+            // game state
             selectedIndices: [],
             solvedWords: [],
             foundIndices: [],
@@ -23,8 +23,13 @@ createApp({
             feedbackColor: '',
             isGameFinished: false,
 
-            // Dashboard Data
-            dashboardData: []
+            // dashboard data
+            dashboardData: [],
+
+            // timer data
+            remainingSeconds: 0,
+            timerInterval: null,
+            isTimeUp: false, // new state for game over modal
         }
     },
     computed: {
@@ -91,6 +96,16 @@ createApp({
                     details: details
                 };
             });
+        },
+        formattedTime() {
+            if (this.remainingSeconds < 0) return "00:00";
+            const minutes = Math.floor(this.remainingSeconds / 60);
+            const seconds = this.remainingSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        },
+        timerColor() {
+            // make text RED when less than 20 seconds
+            return this.remainingSeconds <= 20 ? 'text-red-600 animate-pulse' : 'text-blue-900';
         }
     },
     async mounted() {
@@ -101,9 +116,8 @@ createApp({
         async login() {
             if (!this.inputUsername.trim()) return;
             const username = this.inputUsername.trim().toLowerCase();
-
             try {
-                // Call our new API
+                // call our new API
                 const data = await FunitikanAPI.login(username);
 
                 if (data) {
@@ -116,9 +130,10 @@ createApp({
                         this.mode = 'finished';
                     } else {
                         this.mode = 'story';
-                        this.currentSceneIndex = 0; // Always start story from beginning
+                        this.currentSceneIndex = 0; // always start story from beginning
                         this.solvedWords = data.solved_words || [];
                         this.foundIndices = data.found_indices || [];
+                        this.remainingSeconds = data.time_remaining;
                     }
                 }
             } catch (e) {
@@ -174,8 +189,10 @@ createApp({
                 this.foundIndices = [];
                 this.selectedIndices = [];
                 this.currentSceneIndex = 0;
+                this.stopTimer();
+                this.remainingSeconds = null;
 
-                // Save New State to DB
+                // save new state to database
                 await FunitikanAPI.saveState(this.currentUserId, this.currentStoryIndex, false);
 
                 this.resetGame();
@@ -198,13 +215,14 @@ createApp({
             this.foundIndices = [];
             this.selectedIndices = [];
 
-            // Reset DB State to 0
+            // reset database state to 0
             await FunitikanAPI.saveState(this.currentUserId, 0, false);
 
             this.resetGame();
         },
         startGame() {
             this.mode = 'game';
+            this.startTimer();
         },
         toggleCell(index) {
             if (this.selectedIndices.includes(index)) {
@@ -285,13 +303,14 @@ createApp({
                 this.foundIndices.push(...this.selectedIndices);
                 this.selectedIndices = [];
                 const totalClues = Object.keys(cluesObject).length;
-                const isCompleted = this.solvedWords.length === totalClues;
+                const isCompleted = this.solvedWords.length === Object.keys(this.currentStory.clues).length;
                 await FunitikanAPI.saveProgress(
                     this.currentUserId,
                     this.currentStoryIndex,
                     this.solvedWords,
                     this.foundIndices,
-                    isCompleted
+                    isCompleted,
+                    this.remainingSeconds
                 );
                 if (isCompleted) {
                     if (this.currentStoryIndex === this.stories.length - 1) {
@@ -299,7 +318,7 @@ createApp({
                         setTimeout(async () => {
                             this.isGameFinished = true;
                             this.mode = 'finished';
-                            // Save Final State
+                            // save final state
                             await FunitikanAPI.saveState(this.currentUserId, this.currentStoryIndex, true);
                         }, 1000);
                         return;
@@ -311,6 +330,71 @@ createApp({
                 this.showFeedback("Mali ang sagot! Subukan ulit.", "red");
                 this.selectedIndices = [];
             }
-        }
+        },
+        // --- COUNTDOWN LOGIC ---
+        startTimer() {
+            this.stopTimer();
+
+            if (!this.remainingSeconds || this.remainingSeconds <= 0) {
+                this.remainingSeconds = this.currentStory.timeLimit || 60; // default 60s
+            }
+
+            this.timerInterval = setInterval(() => {
+                this.remainingSeconds--;
+
+                // SAVE EVERY 5 SECONDS (to prevent cheating by refresh)
+                if (this.remainingSeconds % 5 === 0) {
+                    this.saveQuietly();
+                }
+
+                if (this.remainingSeconds <= 0) {
+                    this.stopTimer();
+                    this.handleTimeUp();
+                }
+            }, 1000);
+        },
+
+        stopTimer() {
+            if (this.timerInterval) {
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            }
+        },
+
+        handleTimeUp() {
+            this.isTimeUp = true; // show modal
+            // We force save 0 seconds
+            this.saveQuietly();
+        },
+
+        async retryLevel() {
+            this.isTimeUp = false;
+            this.solvedWords = [];
+            this.foundIndices = [];
+            this.selectedIndices = [];
+            this.remainingSeconds = this.currentStory.timeLimit; // reset time
+
+            // save reset to database
+            await FunitikanAPI.saveProgress(
+                this.currentUserId,
+                this.currentStoryIndex,
+                [], [], false, this.remainingSeconds
+            );
+
+            this.startTimer();
+        },
+
+        // helper to save time without blocking UI
+        async saveQuietly() {
+            const isCompleted = this.solvedWords.length === Object.keys(this.currentStory.clues).length;
+            await FunitikanAPI.saveProgress(
+                this.currentUserId,
+                this.currentStoryIndex,
+                this.solvedWords,
+                this.foundIndices,
+                isCompleted,
+                this.remainingSeconds
+            );
+        },
     }
 }).mount('#app');

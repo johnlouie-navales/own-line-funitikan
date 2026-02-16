@@ -95,11 +95,18 @@
                     </h1>
                 </div>
                 <div class="p-6 md:p-8">
-                    <div class="bg-yellow-50 border-l-8 border-yellow-400 p-4 mb-8 rounded-r-xl shadow-sm">
+                    <div class="bg-yellow-50 border-l-8 border-yellow-400 p-4 mb-8 rounded-r-xl shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
                         <p class="text-yellow-800 text-lg flex items-center gap-3">
                             <span class="text-2xl">💡</span>
                             <span><strong>Panuto:</strong> {{ currentStory.gameInstructions }}</span>
                         </p>
+
+                        <div class="bg-white px-6 py-2 rounded-full shadow-md border-2 border-gray-200 flex items-center gap-3 min-w-[160px] justify-center">
+                            <span class="text-2xl">⏳</span>
+                            <span class="text-3xl font-bold font-[Fredoka] tracking-widest" :class="timerColor">
+                                {{ formattedTime }}
+                             </span>
+                        </div>
                     </div>
                     <div v-if="currentStory.gameImage" class="flex flex-col items-center w-full animate-fade-in py-10">
                         <div class="bg-white p-2 rounded-xl border-4 border-dashed border-gray-300 mb-8 shadow-xl transform rotate-1 hover:rotate-0 transition-transform duration-500">
@@ -202,6 +209,17 @@
                 </ul>
             </div>
             <button @click="restartWholeGame" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transform transition hover:scale-105">🔄 Maglaro Ulit</button>
+        </div>
+    </div>
+    <div v-if="isTimeUp" class="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-white rounded-3xl p-10 max-w-md w-full text-center shadow-2xl animate-bounce-in border-4 border-red-500">
+            <div class="text-7xl mb-6">⏰</div>
+            <h2 class="text-4xl font-bold text-red-600 mb-2 font-[Fredoka]">Naubos ang Oras!</h2>
+            <p class="text-gray-600 mb-8 text-lg">Huwag sumuko! Kaya mo yan.</p>
+
+            <button @click="retryLevel" class="bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-4 px-10 rounded-full shadow-xl w-full transition transform hover:scale-105 active:scale-95">
+                🔄 Subukan Ulit (Retry)
+            </button>
         </div>
     </div>
 </div>

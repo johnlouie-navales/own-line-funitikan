@@ -31,6 +31,7 @@ if ($endpoint === 'admin_login' && $method === 'POST') {
 // --- LOGIN ---
 if ($endpoint === 'login' && $method === 'POST') {
     $username = $input['username'] ?? '';
+    $timeRemaining = null;
     if (!$username) returnError(400, 'Username required');
 
     // get or create Student
@@ -57,12 +58,14 @@ if ($endpoint === 'login' && $method === 'POST') {
 
         $solved = is_array($s) ? $s : [];
         $indices = is_array($i) ? $i : [];
+        $timeRemaining = isset($progress['time_remaining']) ? (int)$progress['time_remaining'] : null;
     }
 
     returnSuccess([
         'student_id' => $student['id'],
         'username' => $student['username'],
         'current_story_index' => (int)$state['current_story_index'],
+        'time_remaining' => $timeRemaining,
         'is_game_finished' => (bool)$state['is_game_finished'],
         'solved_words' => $progress ? json_decode($progress['solved_words']) : [],
         'found_indices' => $progress ? json_decode($progress['found_indices']) : []
@@ -77,6 +80,7 @@ elseif ($endpoint === 'progress' && $method === 'POST') {
         $input['story_index'],
         $input['solved_words'],
         $input['found_indices'],
+        $input['time_remaining'],
         $input['is_completed']
     );
     returnSuccess('Progress Saved');

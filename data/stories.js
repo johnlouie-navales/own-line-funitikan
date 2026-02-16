@@ -2,6 +2,7 @@ const storiesDB = [
     {
         id: 1,
         title: "Ang Sakim na Kuting",
+        timeLimit: 120,
         scenes: [
             {
                 image: "assets/images/story-1/scene-1.webp",

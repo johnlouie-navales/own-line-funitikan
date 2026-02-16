@@ -33,22 +33,24 @@ class Progress extends Model {
      * @param int $storyIndex The index of the story
      * @param array $solvedWords Array of strings representing found words
      * @param array $foundIndices Array of integers representing grid indices
+     * @param int $timeRemaining The countdown of the game
      * @param bool $isCompleted Whether the level is finished
      * @return mysqli_result|bool|int|string Returns ID on create, boolean on update
      */
-    public function saveProgress(int $studentId, int $storyIndex, array $solvedWords, array $foundIndices, bool $isCompleted): mysqli_result|bool|int|string
+    public function saveProgress(int $studentId, int $storyIndex, array $solvedWords, array $foundIndices, int $timeRemaining, bool $isCompleted): mysqli_result|bool|int|string
     {
         $solvedJSON = json_encode($solvedWords);
         $indicesJSON = json_encode($foundIndices);
         $completed = $isCompleted ? 1 : 0;
 
-        // Check if exists
+        // check if exists
         $existing = self::getDetails($studentId, $storyIndex);
 
         if ($existing) {
             return $this->update($existing['id'], [
                 'solved_words' => $solvedJSON,
                 'found_indices' => $indicesJSON,
+                'time_remaining' => $timeRemaining,
                 'is_completed' => $completed
             ]);
         } else {
@@ -57,6 +59,7 @@ class Progress extends Model {
                 'story_index' => $storyIndex,
                 'solved_words' => $solvedJSON,
                 'found_indices' => $indicesJSON,
+                'time_remaining' => $timeRemaining,
                 'is_completed' => $completed
             ]);
         }
