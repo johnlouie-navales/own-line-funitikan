@@ -1,24 +1,45 @@
 <?php
 require_once __DIR__ . '/Model.php';
 
+/**
+ * Progress Model
+ * Manages the specific game progress for each story, including found words,
+ * indices, and completion status. Also generates the aggregated dashboard data.
+ */
 class Progress extends Model {
+    /** @var string The table name associated with the model */
     public static string $table = 'progress';
 
-    // Get specific story progress
-    public static function getDetails($studentId, $storyIndex) {
+    /**
+     * Retrieves the progress record for a specific student and story.
+     *
+     * @param int $studentId The ID of the student
+     * @param int $storyIndex The index of the story (0-based)
+     * @return array|null Associative array of the progress record or null if not found
+     */
+    public static function getDetails(int $studentId, int $storyIndex): ?array
+    {
         $conn = self::getConnectionStatic();
         $sql = "SELECT * FROM progress WHERE student_id = " . (int)$studentId . " AND story_index = " . (int)$storyIndex;
         $result = $conn->query($sql);
         return $result->fetch_assoc();
     }
 
-    // Save progress (Insert or Update)
-    public function saveProgress($studentId, $storyIndex, $solvedWords, $foundIndices, $isCompleted) {
-        $conn = self::getConnectionStatic();
-
-        // Prepare JSON
-        $solved = $conn->real_escape_string(json_encode($solvedWords));
-        $indices = $conn->real_escape_string(json_encode($foundIndices));
+    /**
+     * Saves or updates the student's progress for a specific story.
+     * Automatically handles JSON encoding of arrays before storage.
+     *
+     * @param int $studentId The ID of the student
+     * @param int $storyIndex The index of the story
+     * @param array $solvedWords Array of strings representing found words
+     * @param array $foundIndices Array of integers representing grid indices
+     * @param bool $isCompleted Whether the level is finished
+     * @return mysqli_result|bool|int|string Returns ID on create, boolean on update
+     */
+    public function saveProgress(int $studentId, int $storyIndex, array $solvedWords, array $foundIndices, bool $isCompleted): mysqli_result|bool|int|string
+    {
+        $solvedJSON = json_encode($solvedWords);
+        $indicesJSON = json_encode($foundIndices);
         $completed = $isCompleted ? 1 : 0;
 
         // Check if exists
@@ -26,52 +47,68 @@ class Progress extends Model {
 
         if ($existing) {
             return $this->update($existing['id'], [
-                'solved_words' => $solved, // pass raw string since update() escapes it again?
-                // Wait, your Model::update escapes values. We must pass unescaped string but json_encoded.
-                // Let's adjust slightly: pass the raw array to update()? No, the base model expects strings mostly.
-                // Let's rely on the base model's escaping.
+                'solved_words' => $solvedJSON,
+                'found_indices' => $indicesJSON,
+                'is_completed' => $completed
             ]);
-            // ACTUALLY: The base model escapes everything. So we should pass the JSON string.
-            // But we need to be careful not to double escape.
-            // Let's just run a raw query here for safety since we have complex JSON.
-            $sql = "UPDATE progress SET solved_words='$solved', found_indices='$indices', is_completed=$completed 
-                    WHERE id=" . $existing['id'];
-            return $conn->query($sql);
         } else {
             return $this->create([
                 'student_id' => $studentId,
                 'story_index' => $storyIndex,
-                'solved_words' => json_encode($solvedWords), // Base model will escape this
-                'found_indices' => json_encode($foundIndices), // Base model will escape this
+                'solved_words' => $solvedJSON,
+                'found_indices' => $indicesJSON,
                 'is_completed' => $completed
             ]);
         }
     }
 
-    // Get Dashboard Data (Joins)
-    public static function getDashboardData() {
+    /**
+     * Aggregates data from Students, GameState, and Progress tables
+     * to generate a comprehensive report for the Admin Dashboard.
+     * Includes robust JSON decoding to handle potential legacy data issues.
+     *
+     * @return array Array of student progress reports
+     */
+    public static function getDashboardData(): array
+    {
         $conn = self::getConnectionStatic();
 
-        // 1. Get all students
         $students = $conn->query("SELECT * FROM students")->fetch_all(MYSQLI_ASSOC);
         $report = [];
 
         foreach($students as $s) {
             $sid = $s['id'];
 
-            // Get Game State
+            // get game state
             $stateParams = $conn->query("SELECT * FROM game_state WHERE student_id = $sid")->fetch_assoc();
 
-            // Get All Progress Details
+            // get all progress details
             $progResult = $conn->query("SELECT * FROM progress WHERE student_id = $sid");
             $details = [];
             $completedCount = 0;
 
             while($p = $progResult->fetch_assoc()) {
+                // --- ROBUST DECODING LOGIC ---
+                $rawSolved = $p['solved_words'];
+                $solved = json_decode($rawSolved);
+
+                // if it was double-escaped, decode one more time
+                if (is_string($solved)) {
+                    $solved = json_decode($solved);
+                }
+                // ensure it is an array
+                if (!is_array($solved)) {
+                    $solved = [];
+                }
+
+                $score = count($solved);
+                // ----------------------------
+
                 if ($p['is_completed']) $completedCount++;
+
                 $details[] = [
                     'story_index' => (int)$p['story_index'],
-                    'score' => count(json_decode($p['solved_words'], true) ?? []),
+                    'score' => $score,
                     'is_completed' => (bool)$p['is_completed']
                 ];
             }
@@ -79,7 +116,7 @@ class Progress extends Model {
             $report[] = [
                 'name' => $s['username'],
                 'current_story_index' => $stateParams ? (int)$stateParams['current_story_index'] : 0,
-                'is_game_finished' => $stateParams ? (bool)$stateParams['is_game_finished'] : false,
+                'is_game_finished' => $stateParams && (bool)$stateParams['is_game_finished'],
                 'stories_finished' => $completedCount,
                 'raw_details' => $details
             ];

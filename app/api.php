@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/__init.php';
 
-// Load Models
+// load models
 require_once __DIR__ . '/models/Admin.php';
 require_once __DIR__ . '/models/Student.php';
 require_once __DIR__ . '/models/GameState.php';
@@ -19,8 +19,6 @@ if ($endpoint === 'admin_login' && $method === 'POST') {
     $admin = Admin::authenticate($username, $password);
 
     if ($admin) {
-        // In a real app, you would set a SESSION or return a TOKEN here.
-        // For this prototype, returning success allows the frontend to proceed.
         returnSuccess([
             'id' => $admin['id'],
             'username' => $admin['username']
@@ -35,14 +33,31 @@ if ($endpoint === 'login' && $method === 'POST') {
     $username = $input['username'] ?? '';
     if (!$username) returnError(400, 'Username required');
 
-    // 1. Get or Create Student
+    // get or create Student
     $student = Student::loginOrRegister($username);
 
-    // 2. Get Game State
+    // get game state
     $state = GameState::getByStudent($student['id']);
 
-    // 3. Get Progress for current story
+    // get progress for current story
     $progress = Progress::getDetails($student['id'], $state['current_story_index']);
+
+    // robust decoding for login (handles bad data if it exists)
+    $solved = [];
+    $indices = [];
+
+    if ($progress) {
+        // try standard decode
+        $s = json_decode($progress['solved_words']);
+        $i = json_decode($progress['found_indices']);
+
+        // if it returns a string (double escaped), decode again
+        if (is_string($s)) $s = json_decode($s);
+        if (is_string($i)) $i = json_decode($i);
+
+        $solved = is_array($s) ? $s : [];
+        $indices = is_array($i) ? $i : [];
+    }
 
     returnSuccess([
         'student_id' => $student['id'],
