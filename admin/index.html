@@ -88,23 +88,25 @@
                                 <th class="pb-2 w-1/2">Visual Progress</th>
                             </tr>
                             </thead>
-                            <tbody class="text-gray-600 text-sm">
+                            <tbody>
                             <tr v-for="story in student.details" :key="story.title" class="border-b last:border-0 hover:bg-gray-50">
-                                <td class="py-3 pl-2 font-bold">{{ story.title }}</td>
-                                <td class="py-3 text-center font-bold">
-                                        <span :class="story.score === story.total ? 'text-green-600' : 'text-gray-700'">
+                                <td class="px-4 py-3 font-medium text-gray-900">{{ story.title }}</td>
+                                <td class="px-4 py-3 text-center">
+                                        <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded">
                                             {{ story.score }} / {{ story.total }}
                                         </span>
                                 </td>
-                                <td class="py-3 pr-2">
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex-1 bg-gray-100 rounded-full h-2.5">
-                                            <div class="h-full rounded-full transition-all"
-                                                 :class="story.score === story.total ? 'bg-green-500' : 'bg-blue-400'"
-                                                 :style="{ width: story.percentage + '%' }"></div>
-                                        </div>
-                                        <span class="text-xs font-bold w-8 text-right">{{ Math.round(story.percentage) }}%</span>
+                                <td class="px-4 py-3 text-center">
+                                    <span v-if="story.gameType === 'wordsearch' && story.is_completed" class="text-green-600 font-bold">Done ✅</span>
+                                    <span v-else-if="story.gameType === 'wordsearch' && !story.is_completed" class="text-orange-500 font-bold">In Progress</span>
+
+                                    <div v-if="story.gameType === 'essay' && story.is_completed">
+                                        <span v-if="story.is_graded" class="text-green-600 font-bold mr-2">Graded ✅</span>
+                                        <button @click="openGradingModal(story)" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-xs font-bold py-1 px-3 rounded transition shadow-sm">
+                                            {{ story.is_graded ? 'Edit Grade' : 'Grade Answers' }}
+                                        </button>
                                     </div>
+                                    <span v-if="story.gameType === 'essay' && !story.is_completed" class="text-gray-400 font-bold text-xs">Waiting for submission</span>
                                 </td>
                             </tr>
                             </tbody>
@@ -114,7 +116,28 @@
             </div>
         </div>
     </div>
+    <div v-if="isGradingModalOpen" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-blue-900 mb-4 border-b pb-2">Assess Answers: {{ currentGradeData.title }}</h2>
 
+            <div class="space-y-4 mb-6">
+                <div v-for="(answer, key) in currentGradeData.answers" :key="key" class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p class="font-bold text-gray-700 text-sm mb-2 text-blue-600">{{ key }}</p>
+                    <p class="text-gray-800 italic">"{{ answer }}"</p>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-lg flex items-center justify-between border-2 border-blue-200">
+                <label class="font-bold text-blue-900">Teacher's Score (Max {{ currentGradeData.total }}):</label>
+                <input v-model.number="inputScore" type="number" min="0" :max="currentGradeData.total" class="w-24 p-2 text-xl font-bold text-center border-2 border-blue-400 rounded-lg outline-none focus:ring-2 focus:ring-blue-600">
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button @click="closeGradingModal" class="px-6 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition">Cancel</button>
+                <button @click="submitGrade" class="px-6 py-2 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition shadow-md">Save Grade</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="../data/stories.js"></script>
