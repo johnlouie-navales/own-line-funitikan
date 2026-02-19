@@ -75,15 +75,33 @@ if ($endpoint === 'login' && $method === 'POST') {
 // --- SAVE PROGRESS ---
 elseif ($endpoint === 'progress' && $method === 'POST') {
     $progressModel = new Progress();
+
+    // explicitly cast data types to prevent PHP Fatal Errors
+    $studentId = isset($input['student_id']) ? (int)$input['student_id'] : 0;
+    $storyIndex = isset($input['story_index']) ? (int)$input['story_index'] : 0;
+    $solvedWords = isset($input['solved_words']) && is_array($input['solved_words']) ? $input['solved_words'] : [];
+    $foundIndices = isset($input['found_indices']) && is_array($input['found_indices']) ? $input['found_indices'] : [];
+    $isCompleted = (bool)($input['is_completed'] ?? false);
+    $timeRemaining = isset($input['time_remaining']) ? (int)$input['time_remaining'] : null;
+    $answers = isset($input['answers']) && is_array($input['answers']) ? $input['answers'] : null;
+
     $progressModel->saveProgress(
-        $input['student_id'],
-        $input['story_index'],
-        $input['solved_words'],
-        $input['found_indices'],
-        $input['time_remaining'],
-        $input['is_completed']
+        $studentId,
+        $storyIndex,
+        $solvedWords,
+        $foundIndices,
+        $isCompleted,
+        $timeRemaining,
+        $answers
     );
     returnSuccess('Progress Saved');
+}
+
+// ... ENDPOINT FOR TEACHER GRADING ...
+elseif ($endpoint === 'grade' && $method === 'POST') {
+    $progressModel = new Progress();
+    $progressModel->gradeEssay($input['progress_id'], $input['score']);
+    returnSuccess('Grade Updated');
 }
 
 // --- SAVE STATE (Next Level / Finish) ---

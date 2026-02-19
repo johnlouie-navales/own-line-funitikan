@@ -33,14 +33,16 @@ class Progress extends Model {
      * @param int $storyIndex The index of the story
      * @param array $solvedWords Array of strings representing found words
      * @param array $foundIndices Array of integers representing grid indices
-     * @param int $timeRemaining The countdown of the game
      * @param bool $isCompleted Whether the level is finished
+     * @param int|null $timeRemaining The countdown of the game
+     * @param array|null $answers Associative array of essay answers
      * @return mysqli_result|bool|int|string Returns ID on create, boolean on update
      */
-    public function saveProgress(int $studentId, int $storyIndex, array $solvedWords, array $foundIndices, int $timeRemaining, bool $isCompleted): mysqli_result|bool|int|string
+    public function saveProgress(int $studentId, int $storyIndex, array $solvedWords, array $foundIndices, bool $isCompleted, ?int $timeRemaining, ?array $answers = null): mysqli_result|bool|int|string
     {
         $solvedJSON = json_encode($solvedWords);
         $indicesJSON = json_encode($foundIndices);
+        $answersJSON = $answers ? json_encode($answers) : null;
         $completed = $isCompleted ? 1 : 0;
 
         // check if exists
@@ -50,8 +52,9 @@ class Progress extends Model {
             return $this->update($existing['id'], [
                 'solved_words' => $solvedJSON,
                 'found_indices' => $indicesJSON,
-                'time_remaining' => $timeRemaining,
-                'is_completed' => $completed
+                'answers'        => $answersJSON,
+                'is_completed' => $completed,
+                'time_remaining' => $timeRemaining
             ]);
         } else {
             return $this->create([
@@ -59,10 +62,24 @@ class Progress extends Model {
                 'story_index' => $storyIndex,
                 'solved_words' => $solvedJSON,
                 'found_indices' => $indicesJSON,
-                'time_remaining' => $timeRemaining,
-                'is_completed' => $completed
+                'answers'        => $answersJSON,
+                'is_completed' => $completed,
+                'time_remaining' => $timeRemaining
             ]);
         }
+    }
+
+    /**
+     * Updates the manual score for a student's essay submission.
+     * @param int $progressId The specific progress record ID
+     * @param int $score The score given by the teacher
+     * @return bool True on success, false on failure
+     */
+    public function gradeEssay(int $progressId, int $score): bool
+    {
+        return $this->update($progressId, [
+            'manual_score' => $score
+        ]);
     }
 
     /**
@@ -104,15 +121,22 @@ class Progress extends Model {
                     $solved = [];
                 }
 
-                $score = count($solved);
+                // decode Answers
+                $answers = $p['answers'] ? json_decode($p['answers'], true) : null;
+
+                // score logic: If manual_score is set, use it. otherwise, count solved words.
+                $score = isset($p['manual_score']) ? (int)$p['manual_score'] : count($solved);
                 // ----------------------------
 
                 if ($p['is_completed']) $completedCount++;
 
                 $details[] = [
+                    'progress_id' => (int)$p['id'],
                     'story_index' => (int)$p['story_index'],
                     'score' => $score,
-                    'is_completed' => (bool)$p['is_completed']
+                    'is_completed' => (bool)$p['is_completed'],
+                    'answers' => $answers,
+                    'is_graded' => isset($p['manual_score'])
                 ];
             }
 

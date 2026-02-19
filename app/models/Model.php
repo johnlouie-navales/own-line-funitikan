@@ -75,8 +75,19 @@ abstract class Model {
     {
         $conn = self::getConnectionStatic();
         $columns = implode(", ", array_keys($data));
-        $values  = implode("', '", array_map([$conn, 'real_escape_string'], array_values($data)));
-        $sql = "INSERT INTO " . static::$table . " ($columns) VALUES ('$values')";
+
+        $safeValues = [];
+        foreach ($data as $value) {
+            if ($value === null) {
+                $safeValues[] = "NULL"; // handle nulls safely
+            } elseif (is_bool($value)) {
+                $safeValues[] = $value ? '1' : '0'; // handle booleans safely
+            } else {
+                $safeValues[] = "'" . $conn->real_escape_string((string)$value) . "'";
+            }
+        }
+        $values = implode(", ", $safeValues);
+        $sql = "INSERT INTO `" . static::$table . "` ($columns) VALUES ($values)";
         return $conn->query($sql) ? $conn->insert_id : false;
     }
 
@@ -92,11 +103,18 @@ abstract class Model {
         $conn = self::getConnectionStatic();
         $set = [];
         foreach ($data as $column => $value) {
-            $safeValue = $conn->real_escape_string($value);
-            $set[] = "$column = '$safeValue'";
+            if ($value === null) {
+                $set[] = "`$column` = NULL"; // handle nulls safely
+            } elseif (is_bool($value)) {
+                $boolVal = $value ? '1' : '0';
+                $set[] = "`$column` = '$boolVal'";
+            } else {
+                $safeValue = $conn->real_escape_string((string)$value);
+                $set[] = "`$column` = '$safeValue'";
+            }
         }
         $setString = implode(", ", $set);
-        $sql = "UPDATE " . static::$table . " SET $setString WHERE id = " . (int)$id;
+        $sql = "UPDATE `" . static::$table . "` SET $setString WHERE id = " . (int)$id;
         return $conn->query($sql);
     }
 

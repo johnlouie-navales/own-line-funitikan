@@ -6,7 +6,7 @@ const FunitikanAPI = {
      * Generic Fetch Wrapper to handle JSON parsing and Errors
      */
     async request(endpoint, method = 'GET', body = null) {
-        // We use ?e=endpoint to match your PHP Router structure
+        // we use ?e=endpoint to match PHP Router structure
         const url = `${API_BASE}?e=${endpoint}`;
 
         const options = {
@@ -43,15 +43,21 @@ const FunitikanAPI = {
     },
 
     // --- GAME PROGRESS ---
-    saveProgress(student_id, story_index, solved_words, found_indices, time_remaining, is_completed) {
+    saveProgress(student_id, story_index, solved_words, found_indices, is_completed, time_remaining, answers = null) {
         return this.request('progress', 'POST', {
-            student_id,
-            story_index,
-            solved_words,
-            found_indices,
-            time_remaining,
-            is_completed
+            student_id: student_id,
+            story_index: story_index,
+            solved_words: solved_words,
+            found_indices: found_indices,
+            is_completed: is_completed,
+            time_remaining: time_remaining,
+            answers: answers
         });
+    },
+
+    // MANUAL GRADING
+    gradeEssay(progress_id, score) {
+        return this.request('grade', 'POST', { progress_id, score });
     },
 
     // --- GAME STATE (Current Level) ---
