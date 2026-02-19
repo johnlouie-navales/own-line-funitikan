@@ -109,7 +109,13 @@ createApp({
         }
     },
     async mounted() {
+        // Check if the browser remembers a student who already logged in
+        const savedUser = localStorage.getItem('funitikan_student');
 
+        if (savedUser) {
+            this.inputUsername = savedUser;
+            await this.login(); // Automatically log them in!
+        }
     },
     methods: {
         // --- LOGIN LOGIC ---
@@ -121,6 +127,7 @@ createApp({
                 const data = await FunitikanAPI.login(username);
 
                 if (data) {
+                    localStorage.setItem('funitikan_student', username);
                     this.currentUser = data.username;
                     this.currentUserId = data.student_id;
                     this.currentStoryIndex = data.current_story_index;
@@ -173,11 +180,22 @@ createApp({
                 this.currentSceneIndex--;
             }
         },
-        nextScene() {
+        async nextScene(event) {
+            // prevent double-clicks from skipping scenes
+            if (event) event.stopPropagation();
+
             if (this.currentSceneIndex < this.currentStory.scenes.length - 1) {
+                // move to the next dialogue/image
                 this.currentSceneIndex++;
             } else {
-                this.startGame();
+                // the story is finished. check for a custom HTML game.
+                if (this.currentStory.externalGameUrl) {
+                    // redirect to the custom game
+                    window.location.href = this.currentStory.externalGameUrl;
+
+                } else {
+                    this.startGame();
+                }
             }
         },
         async nextStory() {

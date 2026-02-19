@@ -257,21 +257,13 @@ const storiesDB = [
                 text: "Maging responsableng ama, wag magnakaw dahil mali iyon. Walang trabahong madali o magaan lahat iyan ay pinag hihirapan."
             }
         ],
-        gameInstructions: "Pansamantala: Ang laro ay ginagawa pa lamang.",
+        externalGameUrl: "story2_game.html",
+        gameType: "essay",
         clues: {
-            "KALABAW": "Masipag na hayop",
-            "KABAYO": "Nagnakaw ng laruan"
-        },
-        gridLetters: [
-            ['K', 'A', 'L', 'A', 'B', 'A', 'W', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['K', 'A', 'B', 'A', 'Y', 'O', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']
-        ]
+            "Q1": "Anong katangian ang mayroon si kalabaw? si kabayo?",
+            "Q2": "Kung ikaw si kabayo, gagawin mo rin ba ang ginawa niya?",
+            "Q3": "Anong magandang asal o aral ang nagustuhan mo sa kwento?"
+        }
     },
     {
         id: 3,
@@ -363,21 +355,14 @@ const storiesDB = [
                 text: "Kilalanin muna ang taong nasa iyong paligid. Maaaring sila'y mabait sa una, ngunit hindi natin alam ang mangyayari sa susunod na araw, buwan o taon ."
             }
         ],
-        gameInstructions: "Hanapin ang mga tauhan sa kwento (AHAS, LEON, ELEPANTE).",
+        externalGameUrl: "story3_game.html",
+        gameType: "essay",
         clues: {
-            "AHAS": "Ang hayop na tinulungan ngunit naging taksil",
-            "LEON": "Ang asawa ni Elepante",
-            "ELEPANTE": "Ang maganda at tapat na asawa"
-        },
-        gridLetters: [
-            ['A', 'H', 'A', 'S', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['L', 'E', 'O', 'N', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['E', 'L', 'E', 'P', 'A', 'N', 'T', 'E'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X'],
-            ['X', 'X', 'X', 'X', 'X', 'X', 'X', 'X']
-        ]
+            "Q1": "Sino ang mag asawa sa kwento?",
+            "Q2": "Sino ang naligaw sa kagubatan?",
+            "Q3": "Bakit pinalayas si Ahas ng mag-asawa?",
+            "Q4": "Ano ang maaaring mangyari kung hindi agad pinaalis si Ahas?",
+            "Q5": "Sa iyong palagay, tama ba ang desisyon ng mag asawa?"
+        }
     }
 ];
