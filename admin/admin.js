@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost/own-line-funitikan/app/api.php';
+const API_BASE = window.location.origin + '/own-line-funitikan/app/api.php';
 
 const { createApp } = Vue;
 
