@@ -3,20 +3,31 @@
 
 **OWN-LINE FUNITIKAN** is a web-based interactive application designed to help Grade 7 students engage with Filipino Fables through gamification. The application runs on a Local Area Network (LAN), allowing the teacher to act as the server while students connect using their devices.
 
-## 🚀 Key Features
+## 🚀 System Architecture
+This project utilizes a lightweight, custom MVC (Model-View-Controller) architecture, ensuring strict separation of concerns between the frontend game interfaces and the backend API.
 
-### 🎓 Student Interface
-* **Interactive Fables:** Curated Filipino fables with embedded moral lessons.
-* **Gamified Assessment:** Integrated Word Search (Hanap Salita) games for every story.
-* **Countdown Timer:** Time-limited challenges to improve reading fluency and quick thinking.
-* **Auto-Save Progress:** Game state, found words, and remaining time are saved automatically to the teacher's server.
-* **Strict Validation:** Context-aware word validation (cannot select random letters).
+* **Frontend:** Vue.js (v3), Tailwind CSS, Vanilla JavaScript, HTML5 Canvas API
+* **Backend:** PHP 8.2 (Strict Typing, OOP), RESTful API design
+* **Database:** MySQL / MariaDB (Utilizing JSON data structures for game state storage)
+* **Deployment Target:** Local Area Network (LAN) via XAMPP for offline classroom environments
+
+## ✨ Core Features
+
+### 🎮 Interactive Gamified Assessments
+Custom-built, zero-dependency game engines integrated directly into the DOM:
+* **Word Search (Story 1):** Features 2D grid array validation, tracking horizontal, vertical, and diagonal string matches.
+* **Snake Game (Story 2):** Features a real-time game loop (60 FPS), keyboard/swipe coordinate tracking, and dynamic speed/growth physics.
+* **Bubble Shooter (Story 3):** Features advanced trigonometry ($Math.atan2$) for aiming trajectories, hexagonal grid mathematical rendering, Pythagorean collision detection, and a Breadth-First Search (BFS) Flood Fill algorithm for match-3 popping logic.
+
+### 🎓 Comprehensive Assessment System
+* **Automated Scoring:** Real-time point tracking seamlessly synced to the database.
+* **Reflective Essays:** Modal-based essay submission unlocked only upon successful game completion.
+* **State Management:** Secure tracking of student progress, time limits, and completed stories to prevent skipping or data loss.
 
 ### 👨‍🏫 Teacher/Admin Dashboard
-* **Secure Login:** Dedicated login portal for teachers.
-* **Real-Time Monitoring:** View all registered students and their current progress live.
-* **Detailed Reports:** See exactly which stories a student has finished, their scores, and completion status.
-* **Data Persistence:** All data is stored securely in the teacher's database.
+* **Real-Time Monitoring:** Live dashboard that silently fetches updated student metrics every 5 seconds.
+* **Visual Progress Tracking:** Dynamic progress bars tracking completion percentage and individual story statuses.
+* **Manual Grading Interface:** Dedicated UI for teachers to review qualitative essay answers and input manual scores.
 
 ## 🛠️ System Requirements
 
@@ -101,6 +112,8 @@ To view the dashboard, the teacher can access it on their own computer:
 * Ma Andrea Mendez Padua
 * Melody Remon Enriquez
 * Rea Mae De Guia
+* Ana Marie Bertillo
+* Jamayla Bayos Beldad
 
 **Technical Development:**
 * Developed by: John Louie Navales
