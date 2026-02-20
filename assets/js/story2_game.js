@@ -1,7 +1,8 @@
 let currentUserId = null;
 const STORY_INDEX = 1;
 
-// --- INITIALIZE USER FROM DATABASE ---
+// --- INITIALIZE USER ---
+// noinspection DuplicatedCode
 window.onload = async () => {
     const username = localStorage.getItem('funitikan_student');
     if (username) {
@@ -34,7 +35,7 @@ let timeLeft = 60;
 let timerInterval = setInterval(() => {
     if (!gameActive) return;
     timeLeft--;
-    document.getElementById("time-left").innerText = timeLeft;
+    document.getElementById("time-left").innerText = timeLeft.toString();
     if (timeLeft <= 0) {
         triggerGameOver();
     }
@@ -61,7 +62,7 @@ function drawGame() {
     // check if coin is eaten
     if (headX === coin.x && headY === coin.y) {
         coinsCollected++;
-        document.getElementById("coin-count").innerText = coinsCollected;
+        document.getElementById("coin-count").innerText = coinsCollected.toString();
 
         if (coinsCollected >= 5) {
             triggerVictory();
@@ -224,7 +225,7 @@ function submitAnswers() {
     const ans3 = document.getElementById("q3").value;
 
     if (!ans1 || !ans2 || !ans3) {
-        alert("Pakisagutan lahat ng katanungan bago ipasa.");
+        alert("Sagutan lahat ng katanungan bago ipasa.");
         return;
     }
 
